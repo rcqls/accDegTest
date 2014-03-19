@@ -1,0 +1,9 @@
+Package: accDegTest
+Type: Package
+Title: Model for accelerated degradation tests
+Version: 1.0
+Date: 2014-03-1
+Author: Figal Team
+Maintainer: R. D.  <remy.drouilhet@upmf-grenoble.fr>
+Description: Model for accelerated degradation tests
+License: Todo

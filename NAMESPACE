@@ -1,0 +1,60 @@
+#exportPattern("^[[:alpha:]]+")
+export(
+
+	addt,
+	run,run.addt,
+	#model.frame.addt,
+	#summary.addt,
+	#predict.addt,
+	#residuals.addt,
+	#coef.addt,
+	#plot.addt,
+
+	addtTwoPass,
+	#model.frame.addtTwoPass,
+	#summary.addtTwoPass,
+	#predict.addtTwoPass,
+	#residuals.addtTwoPass,
+	#coef.addtTwoPass,
+	#plot.addtTwoPass,
+	ftq,failure.time.quantile,
+	ftm,failure.time.mean,
+
+
+	sim.addt,
+	simulate.sim.addt,
+	sim.addt.demo #,
+
+	#clouds,
+	#plot.clouds,
+	#model.frame.clouds,
+	#print.clouds,
+	#lines.clouds,
+)
+
+S3method(print, addt)
+S3method(summary, addt)
+S3method(model.frame, addt)
+S3method(coef, addt)
+S3method(plot, addt)
+S3method(residuals, addt)
+S3method(predict, addt)
+S3method(ftq, addt)
+#S3method(ftm, addt)
+
+S3method(summary, addtTwoPass)
+S3method(coef, addtTwoPass)
+S3method(plot, addtTwoPass)
+S3method(residuals, addtTwoPass)
+S3method(predict, addtTwoPass)
+S3method(ftq, addtTwoPass)
+#S3method(ftm, addtTwoPass)
+
+S3method(print, sim.addt)
+#S3method(simulate, sim.addt)
+S3method(model.frame, sim.addt)
+
+#S3method(print, clouds)
+#S3method(model.frame, clouds)
+#S3method(plot, clouds)
+#S3method(lines, clouds)
