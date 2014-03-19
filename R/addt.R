@@ -35,6 +35,10 @@ addt <- function(formula,xref=1,transf=c(log,exp),data) {
   obj
 }
 
+names.addt <- function(obj) {
+  c("optim","par","formula","xref","transf")
+} 
+
 run.addt <- function(obj,par0,method=c("BFGS", "CG", "L-BFGS-B","Nelder-Mead","SANN"),mode=c("two.steps","one.step","best"),verbose=FALSE,...) {
   method <- match.arg(method)
   mode <- match.arg(mode)
@@ -60,7 +64,7 @@ run.addt <- function(obj,par0,method=c("BFGS", "CG", "L-BFGS-B","Nelder-Mead","S
 
   if(verbose) print(obj$optim)
   obj$par <- obj$optim$par
-  obj$par
+  coef(obj)
 }
 
 
@@ -69,6 +73,10 @@ coef.addt <- function(obj,type=c("default","acceleration","af","AF")) {
   switch(type,
     af=,AF=,acceleration=as.vector(exp(as.matrix(obj$zmodel[obj$rank$start,]) %*% obj$par)),
     {
+      if(!is.null(obj$optim) &&  obj$optim$convergence!=0) {
+        warning("Non convergence of optimisation method!")
+        print(obj$optim)
+      }
       res<-c(obj$a0(obj$par),obj$a1(obj$par),obj$par)
       names(res)[1:2] <- c("(intercept)",obj$varnames$t) 
       res

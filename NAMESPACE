@@ -33,6 +33,7 @@ export(
 )
 
 S3method(print, addt)
+S3method(names, addt)
 S3method(summary, addt)
 S3method(model.frame, addt)
 S3method(coef, addt)
