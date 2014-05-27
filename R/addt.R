@@ -287,8 +287,8 @@ print.addt <- function(obj, ... ) {
 summary.addt <- function(obj,...) {
   list(
     coefficients=coef(obj),
-    r.squared=1-var(resid(obj))/var(obj$transf[[1]](obj$model[[1]])),
-    sigma=sqrt(mean((resid<-residuals(obj))^2)/(length(resid)-2)*length(resid))
+    sigma=sqrt(mean((resid<-residuals(obj))^2)/(length(resid)-2)*length(resid)),
+    r.squared=1-var(resid(obj))/var(obj$transf[[1]](obj$model[[1]]))
   )
 }
 
