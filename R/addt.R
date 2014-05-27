@@ -306,13 +306,15 @@ curvesFreeAccelModel.addt <- function(obj,args) {
     curve(obj$transf[[2]](mean(obj$coef4freeAccelModel$intercept)+obj$coef4freeAccelModel$slope[i]*x),col=args$col[i],lty=args$lty[i],lwd=args$lwd[i],add=TRUE)      
 }
 
-plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,fitFreeAccel=FALSE,...) {
+plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,fitFreeAccel=FALSE,xlim=NULL,ylim=NULL,...) {
 
   if(is.numeric(type)) type <- switch(type,"degradation","g-degradation","degradations","stress plot","time resid","stress resid","normal","resid","points cloud")
   if(type=="points cloud") {
     type <- "degradation"
-    step <- 0
-  }
+  } else type <- match.arg(type,c("degradation","g-degradation","degradations","stress plot","time resid","stress resid","normal","resid","points cloud"))
+
+  if(type %in% c("degradation","g-degradation","degradations","stress plot","points cloud") && is.null(xlim) ) 
+    xlim <- range(c(0,obj$model[[2]]))
   
   xx.uniq <- obj$model$xx[obj$rank$start]
 
@@ -349,7 +351,7 @@ plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,
   #cat("aa1->");print(aa1)
 
   if(type=="degradation") {
-    plot(obj$model[[2]],obj$model[[1]],xlab=obj$varnames$t,ylab=obj$varnames$y,main="degradation vs time")
+    plot(obj$model[[2]],obj$model[[1]],xlab=obj$varnames$t,ylab=obj$varnames$y,main="degradation vs time",xlim=xlim,ylim=ylim)
     
     for(i in seq(obj$rank$start)) {
       sub <- obj$rank$start[i]:obj$rank$end[i]
@@ -367,7 +369,7 @@ plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,
     }
     do.legend(args,pos="bottomleft",cex=.8)
   } else if(type=="g-degradation") {
-    plot(obj$model[[2]],obj$transf[[1]](obj$model[[1]]),xlab=obj$varnames$t,ylab=paste("g(",obj$varnames$y,")",sep=""),,main="g-degradation vs time" )
+    plot(obj$model[[2]],obj$transf[[1]](obj$model[[1]]),xlab=obj$varnames$t,ylab=paste("g(",obj$varnames$y,")",sep=""),main="g-degradation vs time",xlim=xlim,ylim=ylim )
     for(i in seq(obj$rank$start)) {
       sub <- obj$rank$start[i]:obj$rank$end[i]
       points(obj$model[sub,2],obj$transf[[1]](obj$model[sub,1]),col=args$col[i],pch=args$pch[i],lwd=args$lwd[i])
@@ -383,11 +385,12 @@ plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,
     do.legend(args,pos="bottomleft",cex=.8)
   } else if(type=="degradations") {
     layout(matrix(c(1,2), 1,2, byrow = TRUE))
-    plot(obj,"degradation",step=step,...)
-    plot(obj,"g-degradation",step=step,...)
+    plot(obj,"degradation",xlim=xlim,...)
+    plot(obj,"g-degradation",xlim=xlim,...)
     layout(1)
-  } else if(type=="stress plot") {
-     
+  } else if(type=="stress plot") { #,xlim=xlim,ylim=ylim
+     plot.clouds(obj,xlim=xlim,main="stress plot",...)
+     lines.clouds(obj,method="same.intercept",ic=0.05)
   } else if(type=="time resid") {
     resid <- residuals(obj)
     # uncomment if standardized residuals

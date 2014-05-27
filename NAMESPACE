@@ -23,13 +23,13 @@ export(
 
 	sim.addt,
 	simulate.sim.addt,
-	sim.addt.demo #,
+	sim.addt.demo ,
 
-	#clouds,
-	#plot.clouds,
-	#model.frame.clouds,
+	clouds,
+	plot.clouds,
+	model.frame.clouds,
 	#print.clouds,
-	#lines.clouds,
+	lines.clouds
 )
 
 S3method(print, addt)
@@ -56,6 +56,6 @@ S3method(print, sim.addt)
 S3method(model.frame, sim.addt)
 
 #S3method(print, clouds)
-#S3method(model.frame, clouds)
-#S3method(plot, clouds)
-#S3method(lines, clouds)
+S3method(model.frame, clouds)
+S3method(plot, clouds)
+S3method(lines, clouds)
