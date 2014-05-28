@@ -1,11 +1,12 @@
 # clouds(d ~ t | x & x_2 ,data)
+# N.B.: plot and lines have a transf parameter to change y variable!
+
 clouds <- function(formula ,data) {
   ## simple transf 
   obj <- new.env()
   obj$formula <- formula
   class(obj) <- "clouds" 
   obj <- if(missing(data)) init.clouds(obj) else init.clouds(obj,data=data)
-
 }
 
 init.clouds <- function(obj,...) {
@@ -111,7 +112,7 @@ lines.clouds <- function(obj,only=NA,method=c("default","same.intercept"),ic=NUL
 		    lm.1.coef <- lm.1$coef
 		    if(!is.null(ic)) {
 			    lm.1.xlim <- range(c(0,obj$model[[2]])) 			#include intercept in range
-			    lm.1.xlim <- lm.1.xlim + diff(lm.1.xlim)*c(-.8,1.2) #increase the range
+			    lm.1.xlim <- lm.1.xlim + diff(lm.1.xlim)*c(-.8,1.2) #increase range
 			    lm.1.new <- data.frame(seq(lm.1.xlim[1],lm.1.xlim[2],length=100))
 			    names(lm.1.new) <- obj$varnames$t
 			}

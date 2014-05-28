@@ -431,30 +431,35 @@ plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,
 
 lines.addt <- function(obj,only=NA,method=c("default","free.accel"),ic=NULL,...) {
   method <- match.arg(method)
-  if(method=="free.accel") lines.clouds(obj,only=only,method="same.intercept",ic=ic,...)
-  else {
-    xx.uniq <- obj$model$xx[obj$rank$start]
-    args <- list(...)
-    #default value
-    if(is.null(args$alpha.col)) args$alpha.col <- .1 
-    if(is.null(args$lwd)) args$lwd <- 2 
-    if(is.null(args$lty)) args$lty <- 1
-    if(is.null(args$col)) args$col <- seq(xx.uniq)+1 
-    if(is.null(args$pch)) args$pch <- seq(xx.uniq)
-    ## complete the vector to the proper length in order to extract index
-    for(v in c("lty","lwd","col","pch","alpha.col")) args[[v]] <- rep(args[[v]],length.out=length(xx.uniq)) 
-      
-    if(length(only)>1 || !is.na(only)) {
-      args$col[setdiff(seq(xx.uniq),only)] <- 0
-    } 
+   
 
-    aa1<-obj$a1(obj$par)*coef(obj,"AF")
+  xx.uniq <- obj$model$xx[obj$rank$start]
+  args <- list(...)
+  #default value
+  if(is.null(args$alpha.col)) args$alpha.col <- .1 
+  if(is.null(args$lwd)) args$lwd <- 2 
+  if(is.null(args$lty)) args$lty <- 1
+  if(is.null(args$col)) args$col <- seq(xx.uniq)+1 
+  if(is.null(args$pch)) args$pch <- seq(xx.uniq)
+  ## complete the vector to the proper length in order to extract index
+  for(v in c("lty","lwd","col","pch","alpha.col")) args[[v]] <- rep(args[[v]],length.out=length(xx.uniq)) 
+    
+  if(length(only)>1 || !is.na(only)) {
+    args$col[setdiff(seq(xx.uniq),only)] <- 0
+  } 
 
-    for(i in seq(obj$rank$start)) {
-      abline(a=obj$a0(obj$par),b=aa1[i],col=args$col[i],lty=args$lty[i],lwd=args$lwd[i])
+  aa1<-obj$a1(obj$par)*coef(obj,"AF")
+
+  switch(method,
+    free.accel={
+      #TODO! pb with a0 what is the best estimation method?
+    },{
+      for(i in seq(obj$rank$start)) {
+        abline(a=obj$a0(obj$par),b=aa1[i],col=args$col[i],lty=args$lty[i],lwd=args$lwd[i])
+      }
     }
+  )
 
-  }
 }
 
 
