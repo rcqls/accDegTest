@@ -47,7 +47,6 @@ addtTwoPass <- function(formula,xref=1,transf=c(log,exp),data,method=4,weight.me
     obj$sigma2.1 <- res1[3,]
 
   } else if (method==2) {
-
     ## ajout de la variable xx (niveau des stress)
     formula1[[3]] <- parse(text=paste(as.character(formula1[[3]]),"xx",sep=":"))[[1]]
     obj$lm.1 <-lm(formula1,data=model1)

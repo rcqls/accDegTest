@@ -308,12 +308,10 @@ curvesFreeAccelModel.addt <- function(obj,args) {
 
 plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,fitFreeAccel=FALSE,xlim=NULL,ylim=NULL,...) {
 
-  if(is.numeric(type)) type <- switch(type,"degradation","g-degradation","degradations","stress plot","time resid","stress resid","normal","resid","points cloud")
-  if(type=="points cloud") {
-    type <- "degradation"
-  } else type <- match.arg(type,c("degradation","g-degradation","degradations","stress plot","time resid","stress resid","normal","resid","points cloud"))
+  if(is.numeric(type)) type <- switch(type,"degradation","g-degradation","all degradations","interval stress plot","time resid","stress resid","normal","resid","points clouds")
+  else type <- match.arg(type,c("degradation","g-degradation","all degradations","interval stress plot","time resid","stress resid","normal","resid","points clouds"))
 
-  if(type %in% c("degradation","g-degradation","degradations","stress plot","points cloud") && is.null(xlim) ) 
+  if(type %in% c("degradation","g-degradation","all degradations","stress plot","points clouds") && is.null(xlim) ) 
     xlim <- range(c(0,obj$model[[2]]))
   
   xx.uniq <- obj$model$xx[obj$rank$start]
@@ -343,14 +341,16 @@ plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,
     do.call("legend",legend)
   }
 
-  if(!is.na(only)) {
+  if(length(only)>1 || !is.na(only)) {
     args$col[setdiff(seq(xx.uniq),only)] <- 0
   }  
 
   aa1<-obj$a1(obj$par)*coef(obj,"AF")
   #cat("aa1->");print(aa1)
 
-  if(type=="degradation") {
+  if(type=="points clouds") {
+    plot.clouds(obj,xlim=xlim,main="points clouds",only=only,...)
+  } else if(type=="degradation") {
     plot(obj$model[[2]],obj$model[[1]],xlab=obj$varnames$t,ylab=obj$varnames$y,main="degradation vs time",xlim=xlim,ylim=ylim)
     
     for(i in seq(obj$rank$start)) {
@@ -383,14 +383,15 @@ plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,
       }
     }
     do.legend(args,pos="bottomleft",cex=.8)
-  } else if(type=="degradations") {
+  } else if(type=="all degradations") {
     layout(matrix(c(1,2), 1,2, byrow = TRUE))
     plot(obj,"degradation",xlim=xlim,...)
     plot(obj,"g-degradation",xlim=xlim,...)
     layout(1)
-  } else if(type=="stress plot") { #,xlim=xlim,ylim=ylim
-     plot.clouds(obj,xlim=xlim,main="stress plot",...)
-     lines.clouds(obj,method="same.intercept",ic=0.05)
+  } else if(type=="interval stress plot") {
+     plot.clouds(obj,xlim=xlim,main="stress plot",only=only,transf=obj$transf[[1]],...)
+     lines.clouds(obj,method="same.intercept",ic=0.05,lty=2,only=only,transf=obj$transf[[1]])
+     lines(obj,only=only,ic=NULL)
   } else if(type=="time resid") {
     resid <- residuals(obj)
     # uncomment if standardized residuals
@@ -427,6 +428,36 @@ plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,
   } 
 
 } 
+
+lines.addt <- function(obj,only=NA,method=c("default","free.accel"),ic=NULL,...) {
+  method <- match.arg(method)
+  if(method=="free.accel") lines.clouds(obj,only=only,method="same.intercept",ic=ic,...)
+  else {
+    xx.uniq <- obj$model$xx[obj$rank$start]
+    args <- list(...)
+    #default value
+    if(is.null(args$alpha.col)) args$alpha.col <- .1 
+    if(is.null(args$lwd)) args$lwd <- 2 
+    if(is.null(args$lty)) args$lty <- 1
+    if(is.null(args$col)) args$col <- seq(xx.uniq)+1 
+    if(is.null(args$pch)) args$pch <- seq(xx.uniq)
+    ## complete the vector to the proper length in order to extract index
+    for(v in c("lty","lwd","col","pch","alpha.col")) args[[v]] <- rep(args[[v]],length.out=length(xx.uniq)) 
+      
+    if(length(only)>1 || !is.na(only)) {
+      args$col[setdiff(seq(xx.uniq),only)] <- 0
+    } 
+
+    aa1<-obj$a1(obj$par)*coef(obj,"AF")
+
+    for(i in seq(obj$rank$start)) {
+      abline(a=obj$a0(obj$par),b=aa1[i],col=args$col[i],lty=args$lty[i],lwd=args$lwd[i])
+    }
+
+  }
+}
+
+
 
 #TODO: random effect model dealt in two steps with Y_i,1-Y_i,0 (sigma) and Y_i,0 (sigma^(0))
 # extension; Y_i,j-hat{a}_i and hat{a}^(0)_i when j>=1 (if j=1 hat{a}^(0)_i=Y_i,0)
