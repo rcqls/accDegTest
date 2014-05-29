@@ -16,7 +16,9 @@ addt <- function(formula,xref=1,transf=c(log,exp),data) {
   }
 
   obj <- new.env()
-  obj$formula<-formula
+  obj$formula <- formula
+  # remove 
+  obj$intercept <- attr(terms(as.formula(strsplit(deparse(formula),"\\|")[[1]][1])),"intercept")
   obj$xref<-xref
   obj$transf<-transf
 
@@ -39,7 +41,7 @@ names.addt <- function(obj) {
   c("optim","par","formula","xref","transf")
 } 
 
-run.addt <- function(obj,par0,method=c("BFGS", "CG", "L-BFGS-B","Nelder-Mead","SANN"),mode=c("two.steps","one.step","best"),verbose=FALSE,...) {
+run.addt <- function(obj,par0,method=c("BFGS","CG","L-BFGS-B","Nelder-Mead","SANN"),mode=c("two.steps","one.step","best"),verbose=FALSE,...) {
   method <- match.arg(method)
   mode <- match.arg(mode)
   if(is.null(obj$par)) obj$par<-rep(0,ncol(obj$zmodel))
@@ -99,35 +101,63 @@ prepare.estim.addt <- function(obj) {
     #) else obj$x
     }
   # slope estimation depending on b
-  obj$a1<-function(b) {
-    as.vector(cov(y,x(b))/var(x(b)))
-  }
-  # contrast to minimize
-  obj$ols<-function(b) {
-    ##obj$x <<- NULL # to be updated when first called 
-    sum((y-mean(y)-obj$a1(b)*(x(b)-mean(x(b))))^2)
+  if(obj$intercept) {
+    obj$a1<-function(b) {
+      as.vector(cov(y,x(b))/var(x(b)))
+    }
+    # contrast to minimize
+    obj$ols<-function(b) {
+      ##obj$x <<- NULL # to be updated when first called 
+      sum((y-mean(y)-obj$a1(b)*(x(b)-mean(x(b))))^2)
+    }
+
+    # function to export results
+    obj$a0<-function(b) {
+      #obj$x <<- NULL 
+      mean(y)-obj$a1(b)*mean(x(b))
+    }
+  } else {
+    obj$a1<-function(b) {
+      as.vector(mean(y*x(b))/mean(x(b)^2))
+    }
+    # contrast to minimize
+    obj$ols<-function(b) {
+      ##obj$x <<- NULL # to be updated when first called 
+      sum((y-obj$a1(b)*(x(b)))^2)
+    }
+    # function to export results
+    obj$a0<-function(b) 0
   }
 
   # gradients
-  a1.gr<-function(b) apply(x.gr(b),2,function(d) (cov(y,d*var(x(b))-cov(y,x(b))*2*cov(x(b),d)))/var(x(b))^2)
   x.gr <- function(b) #if(is.null(obj$dx)) (obj$dx<<-
-    matrix(as.vector(zz)*x(b),nrow=nrow(zz))
-    #) else obj$dx 
+            matrix(as.vector(zz)*x(b),nrow=nrow(zz))
+          #) else obj$dx
 
-  obj$ols.gr<-function(b) {
-    #obj$x <<- NULL;obj$dx<<-NULL # to be updated when first called    
-    dx <- x.gr(b)
-    da1<- a1.gr(b)
-    eps<-y-mean(y)-obj$a1(b)*(x(b)-mean(x(b)))
-    sapply(1:length(da1),function(j) -2*sum(eps*(da1[j]*(x(b)-mean(x(b)))+obj$a1(b)*(as.vector(dx[,j])-mean(as.vector(dx[,j]))))))
+  if(obj$intercept) {
+    a1.gr<-function(b) apply(x.gr(b),2,function(d) (cov(y,d*var(x(b))-cov(y,x(b))*2*cov(x(b),d)))/var(x(b))^2)
+   
+    obj$ols.gr<-function(b) {
+      #obj$x <<- NULL;obj$dx<<-NULL # to be updated when first called    
+      dx <- x.gr(b)
+      da1<- a1.gr(b)
+      eps<-y-mean(y)-obj$a1(b)*(x(b)-mean(x(b)))
+      sapply(1:length(da1),function(j) -2*sum(eps*(da1[j]*(x(b)-mean(x(b)))+obj$a1(b)*(as.vector(dx[,j])-mean(as.vector(dx[,j]))))))
+    }
+
+  } else {
+
+    a1.gr<-function(b) apply(x.gr(b),2,function(d) (mean(y*d*mean(x(b)^2)-mean(y*x(b))*2*mean(x(b)*d)))/mean(x(b)^2)^2)
+   
+    obj$ols.gr<-function(b) {
+      #obj$x <<- NULL;obj$dx<<-NULL # to be updated when first called    
+      dx <- x.gr(b)
+      da1<- a1.gr(b)
+      eps<-y-obj$a1(b)*x(b)
+      sapply(1:length(da1),function(j) -2*sum(eps*(da1[j]*(x(b))+obj$a1(b)*as.vector(dx[,j])))
+    }
   }
   
-  # function to export results
-  obj$a0<-function(b) {
-    #obj$x <<- NULL 
-    mean(y)-obj$a1(b)*mean(x(b))
-  }
-
   obj
 }
 
@@ -466,3 +496,5 @@ lines.addt <- function(obj,only=NA,method=c("default","free.accel"),ic=NULL,...)
 
 #TODO: random effect model dealt in two steps with Y_i,1-Y_i,0 (sigma) and Y_i,0 (sigma^(0))
 # extension; Y_i,j-hat{a}_i and hat{a}^(0)_i when j>=1 (if j=1 hat{a}^(0)_i=Y_i,0)
+
+
