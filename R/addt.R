@@ -12,13 +12,14 @@ addt <- function(formula,xref=1,transf=c(log,exp),data) {
   if(length(transf)==1) {
     if(identical(transf,log)) transf <- c(log,exp)
     else if(identical(transf,exp)) transf <- c(exp,log)
+    else if(identical(transf,identity)) transf <- c(identity,identity) #no transform
     else stop("transf argument generally needs to be of length 2.")
   }
 
   obj <- new.env()
   obj$formula <- formula
   # remove 
-  obj$intercept <- attr(terms(as.formula(strsplit(deparse(formula),"\\|")[[1]][1])),"intercept")
+  obj$with_intercept <- attr(terms(as.formula(strsplit(deparse(formula),"\\|")[[1]][1])),"intercept")
   obj$xref<-xref
   obj$transf<-transf
 
@@ -79,8 +80,13 @@ coef.addt <- function(obj,type=c("default","acceleration","af","AF")) {
         warning("Non convergence of optimisation method!")
         print(obj$optim)
       }
-      res<-c(obj$a0(obj$par),obj$a1(obj$par),obj$par)
-      names(res)[1:2] <- c("(intercept)",obj$varnames$t) 
+      if(obj$with_intercept) {
+        res<-c(obj$a0(obj$par),obj$a1(obj$par),obj$par)
+        names(res)[1:2] <- c("(intercept)",obj$varnames$t)
+      } else {
+        res<-c(obj$a1(obj$par),obj$par)
+        names(res)[1] <- c(obj$varnames$t)
+      } 
       res
     }
   )
@@ -101,7 +107,7 @@ prepare.estim.addt <- function(obj) {
     #) else obj$x
     }
   # slope estimation depending on b
-  if(obj$intercept) {
+  if(obj$with_intercept) {
     obj$a1<-function(b) {
       as.vector(cov(y,x(b))/var(x(b)))
     }
@@ -134,7 +140,7 @@ prepare.estim.addt <- function(obj) {
             matrix(as.vector(zz)*x(b),nrow=nrow(zz))
           #) else obj$dx
 
-  if(obj$intercept) {
+  if(obj$with_intercept) {
     a1.gr<-function(b) apply(x.gr(b),2,function(d) (cov(y,d*var(x(b))-cov(y,x(b))*2*cov(x(b),d)))/var(x(b))^2)
    
     obj$ols.gr<-function(b) {
@@ -154,7 +160,7 @@ prepare.estim.addt <- function(obj) {
       dx <- x.gr(b)
       da1<- a1.gr(b)
       eps<-y-obj$a1(b)*x(b)
-      sapply(1:length(da1),function(j) -2*sum(eps*(da1[j]*(x(b))+obj$a1(b)*as.vector(dx[,j])))
+      sapply(1:length(da1),function(j) -2*sum(eps*(da1[j]*(x(b))+obj$a1(b)*as.vector(dx[,j]))))
     }
   }
   

@@ -12,6 +12,7 @@ addtTwoPass <- function(formula,xref=1,transf=c(log,exp),data,method=4,weight.me
   if(length(transf)==1) {
     if(identical(transf,log)) transf <- c(log,exp)
     else if(identical(transf,exp)) transf <- c(exp,log)
+    else if(identical(transf,identity)) transf <- c(identity,identity) #no transform
     else stop("transf argument generally needs to be of length 2.")
   }
 
@@ -20,6 +21,9 @@ addtTwoPass <- function(formula,xref=1,transf=c(log,exp),data,method=4,weight.me
 
   obj <- if(missing(data)) init.addt(obj) else init.addt(obj,data=data)
 
+  # with intercept?
+  obj$with_intercept <- attr(terms(as.formula(strsplit(deparse(formula),"\\|")[[1]][1])),"intercept")
+  
   ###### First regressions
   ## formula1 = d ~ t => first regression to apply for each stress level
   formula1 <- obj$formula
@@ -42,17 +46,29 @@ addtTwoPass <- function(formula,xref=1,transf=c(log,exp),data,method=4,weight.me
     })
     
     obj$lm.1 <- lm1
-    obj$intercept.1 <- res1[1,] #here, intercept is a vector
-    obj$slope.1 <- res1[2,]
-    obj$sigma2.1 <- res1[3,]
+    if(obj$with_intercept) {
+      obj$intercept.1 <- res1[1,] #here, intercept is a vector
+      obj$slope.1 <- res1[2,]
+      obj$sigma2.1 <- res1[3,]
+    } else {
+      obj$intercept.1 <- 0 #here, intercept is a vector
+      obj$slope.1 <- res1[1,]
+      obj$sigma2.1 <- res1[2,]
+    }
 
   } else if (method==2) {
     ## ajout de la variable xx (niveau des stress)
     formula1[[3]] <- parse(text=paste(as.character(formula1[[3]]),"xx",sep=":"))[[1]]
     obj$lm.1 <-lm(formula1,data=model1)
-    obj$intercept.1 <- obj$lm.1$coef[1]
-    obj$slope.1 <- obj$lm.1$coef[-1]
-    obj$sigma2.1 <- sum(residuals(obj$lm.1)^2)/obj$lm.1$df.residual
+    if(obj$with_intercept) {
+      obj$intercept.1 <- obj$lm.1$coef[1]
+      obj$slope.1 <- obj$lm.1$coef[-1]
+      obj$sigma2.1 <- sum(residuals(obj$lm.1)^2)/obj$lm.1$df.residual
+    } else {
+      obj$intercept.1 <- 0
+      obj$slope.1 <- obj$lm.1$coef
+      obj$sigma2.1 <- sum(residuals(obj$lm.1)^2)/obj$lm.1$df.residual
+    }
   }
   # further step for method3
   if (method %in% c(3,4)) {
