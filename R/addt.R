@@ -7,7 +7,7 @@
 
 # Version (New) based on the maximum-likekihood equivalent to the least square method!!!
 # addt(d ~ t | 1/x & 1/x_2 ,data,xref=?,transf=log)
-addt <- function(formula,xref=1,transf=c(log,exp),data) {
+addt <- function(formula,xref=1,transf=log,data) {
   ## simple transf 
   if(length(transf)==1) {
     if(identical(transf,log)) transf <- c(log,exp)

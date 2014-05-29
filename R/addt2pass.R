@@ -7,7 +7,7 @@
 
 # Version (OLD) with two passes! Mainly used as an initialization of addt.
 # addtTwoPass(d ~ t | 1/x & 1/x_2 ,data,xref=?,transf=log)
-addtTwoPass <- function(formula,xref=1,transf=c(log,exp),data,method=4,weight.method3=function(x) 1/sqrt(sum(x^2)),more.step=0) {
+addtTwoPass <- function(formula,xref=1,transf=log,data,method=4,weight.method3=function(x) 1/sqrt(sum(x^2)),more.step=0) {
   ## simple transf 
   if(length(transf)==1) {
     if(identical(transf,log)) transf <- c(log,exp)

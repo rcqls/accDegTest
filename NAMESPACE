@@ -20,6 +20,7 @@ export(
 	ftq,failure.time.quantile,
 	ftm,failure.time.mean,
 
+	addt0,
 
 	sim.addt,
 	simulate.sim.addt,
