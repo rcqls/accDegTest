@@ -321,10 +321,12 @@ print.addt <- function(obj, ... ) {
 }
 
 summary.addt <- function(obj,...) {
+  r2 <- if(obj$with_intercept) 1-var(resid(obj))/var(obj$transf[[1]](obj$model[[1]]))
+        else 1-mean(resid(obj)^2)/mean((obj$transf[[1]](obj$model[[1]]))^2)
   list(
     coefficients=coef(obj),
     sigma=sqrt(mean((resid<-residuals(obj))^2)/(length(resid)-2)*length(resid)),
-    r.squared=1-var(resid(obj))/var(obj$transf[[1]](obj$model[[1]]))
+    r.squared=r2
   )
 }
 
@@ -342,7 +344,7 @@ curvesFreeAccelModel.addt <- function(obj,args) {
     curve(obj$transf[[2]](mean(obj$coef4freeAccelModel$intercept)+obj$coef4freeAccelModel$slope[i]*x),col=args$col[i],lty=args$lty[i],lwd=args$lwd[i],add=TRUE)      
 }
 
-plot.addt <- function(obj,type="degradations",with.layout=TRUE,fit=TRUE,only=NA,fitFreeAccel=FALSE,xlim=NULL,ylim=NULL,...) {
+plot.addt <- function(obj,type="all degradations",with.layout=TRUE,fit=TRUE,only=NA,fitFreeAccel=FALSE,xlim=NULL,ylim=NULL,...) {
 
   if(is.numeric(type)) type <- switch(type,"degradation","g-degradation","all degradations","interval stress plot","time resid","stress resid","normal","resid","points clouds")
   else type <- match.arg(type,c("degradation","g-degradation","all degradations","interval stress plot","time resid","stress resid","normal","resid","points clouds"))

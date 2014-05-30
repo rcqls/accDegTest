@@ -105,11 +105,11 @@ lines.clouds <- function(obj,only=NA,method=c("default","same.intercept"),ic=NUL
 	switch(method,
 		same.intercept={
 			## ajout de la variable xx (niveau des stress)
-		    formula1[[3]] <- parse(text=paste(as.character(formula1[[3]]),"xx",sep=":"))[[1]]
+		    formula1[[3]] <- parse(text=paste("xx",deparse(formula1[[3]]),sep=":"))[[1]]
 		    data <- obj$model
 		    data[[1]] <- transf(data[[1]])
 		    lm.1 <-lm(formula1,data=data)
-		    lm.1.coef <- lm.1$coef
+		    lm.1.coef <- if(attr(terms(formula1),"intercept")) lm.1$coef else c(0,lm.1$coef)
 		    if(!is.null(ic)) {
 			    lm.1.xlim <- range(c(0,obj$model[[2]])) 			#include intercept in range
 			    lm.1.xlim <- lm.1.xlim + diff(lm.1.xlim)*c(-.8,1.2) #increase range

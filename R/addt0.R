@@ -61,6 +61,8 @@ prepare.estim.addt0 <- function(obj) {
 	# measure 0
 	y0 <- obj$transf[[1]](obj$data[measure==0,obj$varnames$y])
 	#print(y0)
+	obj$coef.y0 <- mean(y0)
+	obj$sigma.y0 <- sd(y0)
 
 	# measure 1
 	data1 <- cbind(obj$data[measure==1,], data.frame(dy=sapply(unique(syst),function(s) {
@@ -73,6 +75,17 @@ prepare.estim.addt0 <- function(obj) {
 	form <- update(eval(as.call(c(obj$formula[[1]],obj$formula[[2]],obj$formula[[3]][[2]]))),.~0+.)
 	formula <- obj$formula
 	formula[[3]][[2]] <- form[[3]]
-	obj$addt <- addt(formula,obj$xref,obj$transf,data=data1)
+	obj$addt.dy <- addt(formula,obj$xref,transf=identity,data=data1)
+	obj$coef.dy <- coef(obj$addt.dy)
+	obj$sigma.dy <- summary(obj$addt.dy)$sigma
 
+	## model coefficients
+	obj$coef <- c(obj$coef.0,obj$coef.dy)
+	names(obj$coef)[[1]] <- "intercept"
+	obj$sigma <- obj$sigma.dy/sqrt(2)
+	obj$sigma.0 <- sqrt(obj$sigma.y0^2 - obj$sigma^2) # random intercept effect noise 
 }
+
+coefficients.addt0 <- function(obj) obj$coef
+
+summary.addt0 <- function(obj) list(coefficients=coef(obj),sigma0=obj$sigma.0,sigma=obj$sigma,r.squared=summary(obj$addt.dy)$r.squared)
