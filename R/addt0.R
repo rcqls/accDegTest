@@ -86,6 +86,129 @@ prepare.estim.addt0 <- function(obj) {
 	obj$sigma.0 <- sqrt(obj$sigma.y0^2 - obj$sigma^2) # random intercept effect noise 
 }
 
-coefficients.addt0 <- function(obj) obj$coef
+coef.addt0 <- function(obj) obj$coef
 
 summary.addt0 <- function(obj) list(coefficients=coef(obj),sigma0=obj$sigma.0,sigma=obj$sigma,r.squared=summary(obj$addt.dy)$r.squared)
+
+plot.addt0 <- function(obj,type="all degradations",with.layout=TRUE,fit=TRUE,only=NA,fitFreeAccel=FALSE,xlim=NULL,ylim=NULL,...) {
+
+  if(is.numeric(type)) type <- switch(type,"degradation","g-degradation","all degradations","interval stress plot","time resid","stress resid","normal","resid","points clouds")
+  else type <- match.arg(type,c("degradation","g-degradation","all degradations","interval stress plot","time resid","stress resid","normal","resid","points clouds"))
+
+  if(type %in% c("degradation","g-degradation","all degradations","stress plot","points clouds") && is.null(xlim) ) 
+    xlim <- range(c(0,obj$model[[2]]))
+  
+  xx.uniq <- obj$model$xx[obj$rank$start]
+
+  args <- list(...)
+  #default value
+  if(is.null(args$lwd)) args$lwd <- 2 
+  if(is.null(args$lty)) args$lty <- 1
+  if(is.null(args$col)) args$col <- seq(xx.uniq)+1 
+  if(is.null(args$pch)) args$pch <- seq(xx.uniq)
+  ## complete the vector to the proper length in order to extract index
+  for(v in c("lty","lwd","col","pch")) args[[v]] <- rep(args[[v]],length.out=length(xx.uniq)) 
+  
+
+
+  do.legend <- function(args,...) {
+    default <- list(...)
+    for(v in names(default)) if(is.null(args[[v]])) args[[v]] <- default[[v]]
+    if(!is.null(args$pos)) {
+      pos <- args$pos
+      args$pos <- NULL
+    }
+    legend <- list(x=pos[1])
+    if(length(pos)==2) legend$y <- pos[2]
+    legend <- c(legend,args)
+    if(is.null(legend$legend)) legend$legend <- xx.uniq
+    do.call("legend",legend)
+  }
+
+  if(length(only)>1 || !is.na(only)) {
+    args$col[setdiff(seq(xx.uniq),only)] <- 0
+  }  
+
+  aa1<-obj$a1(obj$par)*coef(obj,"AF")
+  #cat("aa1->");print(aa1)
+
+  if(type=="points clouds") {
+    plot.clouds(obj,xlim=xlim,main="points clouds",only=only,...)
+  } else if(type=="degradation") {
+    plot(obj$model[[2]],obj$model[[1]],xlab=obj$varnames$t,ylab=obj$varnames$y,main="degradation vs time",xlim=xlim,ylim=ylim)
+    
+    for(i in seq(obj$rank$start)) {
+      sub <- obj$rank$start[i]:obj$rank$end[i]
+      points(obj$model[sub,2],obj$model[sub,1],col=args$col[i],pch=args$pch[i],lwd=args$lwd[i])
+      if(fit) {
+        #if(step %in% c(1,1.2,12,2.1,21)) 
+        curve(obj$transf[[2]](obj$a0(obj$par)+aa1[i]*x),col=args$col[i],lty=args$lty[i],lwd=args$lwd[i],add=TRUE)
+        #if(step %in% c(2,1.2,12,2.1,21)) curve(obj$transf[[2]](mean(obj$intercept.1)+obj$slope.2[i]*x),col=args$col[i],lty=args$lty[i],lwd=args$lwd[i],add=TRUE)
+        if(fitFreeAccel) {
+          argsFree <- args
+          argsFree$lty <- argsFree$lty*2
+          curvesFreeAccelModel.addt(obj,argsFree)
+        }
+      }
+    }
+    do.legend(args,pos="bottomleft",cex=.8)
+  } else if(type=="g-degradation") {
+    plot(obj$model[[2]],obj$transf[[1]](obj$model[[1]]),xlab=obj$varnames$t,ylab=paste("g(",obj$varnames$y,")",sep=""),main="g-degradation vs time",xlim=xlim,ylim=ylim )
+    for(i in seq(obj$rank$start)) {
+      sub <- obj$rank$start[i]:obj$rank$end[i]
+      points(obj$model[sub,2],obj$transf[[1]](obj$model[sub,1]),col=args$col[i],pch=args$pch[i],lwd=args$lwd[i])
+      # if(step %in% c(1,1.2,12,2.1,21)) abline(a=mean(obj$intercept.1),b=obj$slope.1[i],col=args$col[i],lty=args$lty[i]*lty.factor,lwd=args$lwd[i])
+      # if(step %in% c(2,1.2,12,2.1,21)) abline(a=mean(obj$intercept.1),b=obj$slope.2[i],col=args$col[i],lty=args$lty[i],lwd=args$lwd[i])
+      abline(a=obj$a0(obj$par),b=aa1[i],col=args$col[i],lty=args$lty[i],lwd=args$lwd[i])
+      if(fitFreeAccel) {
+          argsFree <- args
+          argsFree$lty <- argsFree$lty*2
+          linesFreeAccelModel.addt(obj,argsFree)
+      }
+    }
+    do.legend(args,pos="bottomleft",cex=.8)
+  } else if(type=="all degradations") {
+    layout(matrix(c(1,2), 1,2, byrow = TRUE))
+    plot(obj,"degradation",xlim=xlim,...)
+    plot(obj,"g-degradation",xlim=xlim,...)
+    layout(1)
+  } else if(type=="interval stress plot") {
+     plot.clouds(obj,xlim=xlim,main="stress plot",only=only,transf=obj$transf[[1]],...)
+     lines.clouds(obj,method="same.intercept",ic=0.05,lty=2,only=only,transf=obj$transf[[1]])
+     lines(obj,only=only,ic=NULL)
+  } else if(type=="time resid") {
+    resid <- residuals(obj)
+    # uncomment if standardized residuals
+    #resid <- resid/sqrt(mean(resid^2)/(length(resid)-2)*length(resid))
+    plot(obj$model[[2]],resid,xlab=obj$varnames$t,main="residuals vs time")
+    for(i in seq(obj$rank$start)) {
+      sub <- obj$rank$start[i]:obj$rank$end[i]
+      points(obj$model[sub,2],resid[sub],col=args$col[i],pch=args$pch[i],lwd=args$lwd[i])
+      abline(h=0,lwd=3)
+    }
+    do.legend(args,pos="top",cex=.8)
+  } else if(type=="stress resid") {
+    resid <- residuals(obj)
+    # uncomment if standardized residuals
+    #resid <- resid/sqrt(mean(resid^2)/(length(resid)-2)*length(resid))
+    nx <- length(obj$varnames$x)
+    if(with.layout) layout(matrix(c(rep(1,nx),2:(nx+1)), nx,2, byrow = FALSE))
+    plot(obj$model$xx,resid,main="residuals vs stress")
+    if(with.layout) for(v in obj$varnames$x) {
+      plot(obj$model[[v]],resid,xlab=v,main=paste("residuals vs",v))
+    }
+    if(with.layout) layout(1)
+  } else if(type=="normal") {
+    resid <- residuals(obj)
+    # uncomment if standardized residuals
+    #resid <- resid/sqrt(mean(resid^2)/(length(resid)-2)*length(resid))
+    qqnorm(resid)
+  } else if(type=="resid") {
+    layout(matrix(c(1,1,2,3), 2,2, byrow = TRUE))
+    plot(obj,"time resid",...)
+    plot(obj,"stress resid",with.layout=FALSE)
+    plot(obj,"normal")
+    layout(1)
+  } 
+
+}
