@@ -179,7 +179,6 @@ init.addt <- function(obj,...) {
   obj$varnames <- varnames  # stressed varnames
   obj$model<-model.frame(obj,...)
 
-
   ## xx = unique identifier for the level of stress
   obj$model$xx <- as.factor(apply(obj$model[obj$varnames$x],1,function(l) paste(paste(names(l),l,sep="="),collapse="&")))
   ## sort model by xx

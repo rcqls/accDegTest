@@ -21,14 +21,10 @@ addt0 <- function(formula,xref=1,transf=log,data,measure.varname="measure",syste
 	obj$xref<-xref
 	obj$transf<-transf
 
-	class(obj) <- "addt0"
+	class(obj) <- c("addt0","addt") # addt for model.frame!
 
-	# varnames 
-	obj$varnames<-list(
-		y=all.vars(obj$formula[[2]]),
-		t=all.vars(obj$formula[[length(obj$formula)]][[2]]),
-    	x=all.vars(obj$formula[[length(obj$formula)]][[3]])
-	)
+	init.addt(obj,data=data)
+
 	# detect system variable
 	if(is.character(system.varname)) {
 		if(system.varname %in% names(obj$data)) obj$varnames$system <- system.varname
@@ -129,7 +125,7 @@ plot.addt0 <- function(obj,type="all degradations",with.layout=TRUE,fit=TRUE,onl
     args$col[setdiff(seq(xx.uniq),only)] <- 0
   }  
 
-  aa1<-obj$a1(obj$par)*coef(obj,"AF")
+  aa1<-obj$addt.dy$a1(obj$addt.dy$par)*coef(obj$addt.dy,"AF")
   #cat("aa1->");print(aa1)
 
   if(type=="points clouds") {
@@ -142,7 +138,7 @@ plot.addt0 <- function(obj,type="all degradations",with.layout=TRUE,fit=TRUE,onl
       points(obj$model[sub,2],obj$model[sub,1],col=args$col[i],pch=args$pch[i],lwd=args$lwd[i])
       if(fit) {
         #if(step %in% c(1,1.2,12,2.1,21)) 
-        curve(obj$transf[[2]](obj$a0(obj$par)+aa1[i]*x),col=args$col[i],lty=args$lty[i],lwd=args$lwd[i],add=TRUE)
+        curve(obj$transf[[2]](obj$coef.y0+aa1[i]*x),col=args$col[i],lty=args$lty[i],lwd=args$lwd[i],add=TRUE)
         #if(step %in% c(2,1.2,12,2.1,21)) curve(obj$transf[[2]](mean(obj$intercept.1)+obj$slope.2[i]*x),col=args$col[i],lty=args$lty[i],lwd=args$lwd[i],add=TRUE)
         if(fitFreeAccel) {
           argsFree <- args
@@ -159,7 +155,7 @@ plot.addt0 <- function(obj,type="all degradations",with.layout=TRUE,fit=TRUE,onl
       points(obj$model[sub,2],obj$transf[[1]](obj$model[sub,1]),col=args$col[i],pch=args$pch[i],lwd=args$lwd[i])
       # if(step %in% c(1,1.2,12,2.1,21)) abline(a=mean(obj$intercept.1),b=obj$slope.1[i],col=args$col[i],lty=args$lty[i]*lty.factor,lwd=args$lwd[i])
       # if(step %in% c(2,1.2,12,2.1,21)) abline(a=mean(obj$intercept.1),b=obj$slope.2[i],col=args$col[i],lty=args$lty[i],lwd=args$lwd[i])
-      abline(a=obj$a0(obj$par),b=aa1[i],col=args$col[i],lty=args$lty[i],lwd=args$lwd[i])
+      abline(a=obj$coef.y0,b=aa1[i],col=args$col[i],lty=args$lty[i],lwd=args$lwd[i])
       if(fitFreeAccel) {
           argsFree <- args
           argsFree$lty <- argsFree$lty*2
