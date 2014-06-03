@@ -27,6 +27,7 @@ export(
 	sim.addt.demo ,
 
 	clouds,
+	init.system.clouds,
 	plot.clouds,
 	model.frame.clouds,
 	#print.clouds,

@@ -25,45 +25,25 @@ addt0 <- function(formula,xref=1,transf=log,data,measure.varname="measure",syste
 
 	init.addt(obj,data=data)
 
-	# detect system variable
-	if(is.character(system.varname)) {
-		if(system.varname %in% names(obj$data)) obj$varnames$system <- system.varname
-		else system.varname <- 1
-	}
-	if(is.numeric(system.varname)) obj$varnames$system <- names(data)[[system.varname]]
-	if(obj$varnames$system %in% all.vars(obj$formula)) stop("system variable name matches to some variable of the model")
+	# reuse because already defined for general clouds plotting
+	init.system.clouds(obj,measure.varname,system.varname)
 	
-	# detect measure variable
-	if(is.character(measure.varname)) {
-		if(measure.varname %in% names(obj$data)) obj$varnames$measure <- measure.varname
-		else measure.varname <- 2
-	}
-	if(is.numeric(measure.varname)) obj$varnames$measure <- names(data)[[measure.varname]]
-	if(obj$varnames$measure %in% all.vars(obj$formula)) stop("measure variable name matches to some variable of the model")
-	
-	if(!is.numeric(obj$data[[obj$varnames$measure]])) stop("measure variable is supposed to be numeric!")
-	
-	# 
 	prepare.estim.addt0(obj) 
 	
 	obj
 }
 
-
 prepare.estim.addt0 <- function(obj) {
-	# system are uniquely determined with cond and system name 
-	syst <- paste(obj$data[[obj$varnames$system]],apply(obj$data[obj$varnames$x],1,paste,collapse="&"),sep="&")
-	measure <- obj$data[[obj$varnames$measure]]
 	# measure 0
-	y0 <- obj$transf[[1]](obj$data[measure==0,obj$varnames$y])
+	y0 <- obj$transf[[1]](obj$data[obj$measure==0,obj$varnames$y])
 	#print(y0)
 	obj$coef.y0 <- mean(y0)
 	obj$sigma.y0 <- sd(y0)
 
 	# measure 1
-	data1 <- cbind(obj$data[measure==1,], data.frame(dy=sapply(unique(syst),function(s) {
-			obj$transf[[1]](obj$data[syst == s & measure == 1, obj$varnames$y])
-			- obj$transf[[1]](obj$data[syst == s & measure == 0, obj$varnames$y])
+	data1 <- cbind(obj$data[obj$measure==1,], data.frame(dy=sapply(unique(obj$syst_id),function(s) {
+			obj$transf[[1]](obj$data[obj$syst_id == s & obj$measure == 1, obj$varnames$y])
+			- obj$transf[[1]](obj$data[obj$syst_id == s & obj$measure == 0, obj$varnames$y])
 		}
 	)))
 
@@ -82,9 +62,27 @@ prepare.estim.addt0 <- function(obj) {
 	obj$sigma.0 <- sqrt(obj$sigma.y0^2 - obj$sigma^2) # random intercept effect noise 
 }
 
-coef.addt0 <- function(obj) obj$coef
+
+coef.addt0 <- function(obj,type=c("default","acceleration","af","AF")) {
+  type <- match.arg(type)
+  switch(type,
+    af=,AF=,acceleration=coef(obj$addt.dy,"AF"),
+    obj$coef
+  )
+}
 
 summary.addt0 <- function(obj) list(coefficients=coef(obj),sigma0=obj$sigma.0,sigma=obj$sigma,r.squared=summary(obj$addt.dy)$r.squared)
+
+residuals.addt0 <- function(obj) {
+    resid <- obj$model[[1]]
+    aa1 <- obj$addt.dy$a1(obj$par)*coef(obj,"AF")
+    for(i in seq(obj$rank$start)) {
+      sub <- obj$rank$start[i]:obj$rank$end[i]
+      resid[sub] <- obj$transf[[1]](obj$model[[1]][sub])-(obj$coef.y0 + aa1[i]*obj$model[[2]][sub]) 
+    }
+    resid
+  # }
+}
 
 plot.addt0 <- function(obj,type="all degradations",with.layout=TRUE,fit=TRUE,only=NA,fitFreeAccel=FALSE,xlim=NULL,ylim=NULL,...) {
 

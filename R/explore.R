@@ -1,12 +1,19 @@
 # clouds(d ~ t | x & x_2 ,data)
 # N.B.: plot and lines have a transf parameter to change y variable!
 
-clouds <- function(formula ,data) {
+clouds <- function(formula,data,measure.varname="measure",system.varname="system") {
   ## simple transf 
   obj <- new.env()
   obj$formula <- formula
-  class(obj) <- "clouds" 
-  obj <- if(missing(data)) init.clouds(obj) else init.clouds(obj,data=data)
+  class(obj) <- "clouds"
+  if(missing(data)) {
+   init.clouds(obj) 
+  } else { # for measures and systems identification
+  	init.clouds(obj,data=data)
+  	obj$data <- data
+  	init.system.clouds(obj,measure.varname,system.varname)
+  }
+  obj
 }
 
 init.clouds <- function(obj,...) {
@@ -25,6 +32,28 @@ init.clouds <- function(obj,...) {
   obj #return the obj itself
 }
 
+init.system.clouds <- function(obj,measure.varname="measure",system.varname="system") {
+	# detect system variable
+	if(is.character(system.varname)) {
+		if(system.varname %in% names(obj$data)) obj$varnames$system <- system.varname
+		else system.varname <- 1
+	}
+	if(is.numeric(system.varname)) obj$varnames$system <- names(data)[[system.varname]]
+	if(obj$varnames$system %in% all.vars(obj$formula)) stop("system variable name matches to some variable of the model")
+	
+	# detect measure variable
+	if(is.character(measure.varname)) {
+		if(measure.varname %in% names(obj$data)) obj$varnames$measure <- measure.varname
+		else measure.varname <- 2
+	}
+	if(is.numeric(measure.varname)) obj$varnames$measure <- names(data)[[measure.varname]]
+	if(obj$varnames$measure %in% all.vars(obj$formula)) stop("measure variable name matches to some variable of the model")
+	
+	if(!is.numeric(obj$data[[obj$varnames$measure]])) stop("measure variable is supposed to be numeric!")
+	obj$syst_id <- paste(obj$data[[obj$varnames$system]],apply(obj$data[obj$varnames$x],1,paste,collapse="&"),sep="&")
+	obj$measure <- obj$data[[obj$varnames$measure]]
+}
+
 model.frame.clouds <- function(obj,...) {
   if(is.null(obj$model)) {
     data <- list(...)$data # NULL if data not provided inside ...
@@ -36,8 +65,9 @@ model.frame.clouds <- function(obj,...) {
 }
 
 
-plot.clouds <- function(obj,only=NA,xlim=NULL,main=NULL,transf=NULL,...) {
+plot.clouds <- function(obj,only=NA,method=c("default","measures"),xlim=NULL,main=NULL,transf=NULL,arrows.only=NA,...) {
 
+	method <- match.arg(method)
 	if(is.null(transf)) transf <- function(x) x
 	xx <- obj$model$xx
 	xx.uniq <- unique(xx)
@@ -69,12 +99,35 @@ plot.clouds <- function(obj,only=NA,xlim=NULL,main=NULL,transf=NULL,...) {
 		args$col[setdiff(seq(xx.uniq),only)] <- 0
 	}  
 
+	symbols <- c(letters,1:100) # TODO
+
 	plot(obj$model[[2]],transf(obj$model[[1]]),xlab=obj$varnames$t,ylab=obj$varnames$y,main=if(is.null(main)) "clouds" else main,col=0,xlim=xlim)
-	for(i in seq(xx.uniq)) {
-	  	sub <- xx==xx.uniq[i]
-	  	points(obj$model[sub,2],transf(obj$model[sub,1]),col=args$col[i],pch=args$pch[i],lwd=args$lwd[i])
-	}
-	do.legend(args,pos="bottomleft",cex=.8)
+	switch(method,
+	measures={
+		for(i in seq(xx.uniq)) {
+			cpt <- 0
+		  	sub <- xx==xx.uniq[i]
+		  	systs <- unique(obj$syst_id[sub])
+		  	for(k in systs) {
+		  		pch <- symbols[cpt <- cpt+1]
+		  		syst <- obj$syst_id == k
+		  		x<-obj$model[syst,2];y<-transf(obj$model[syst,1])
+		  		if(length(arrows.only)>1 && (cpt %in% arrows.only[[i]])) {
+		  			arrows(x[-length(x)],y[-length(y)],x[-1],y[-1],col=args$col[i])
+		  		}
+		  		points(x,y,col=args$col[i],pch=pch,lwd=args$lwd[i])
+				
+			}
+		}
+		args$pch <- NULL
+		do.legend(args,pos="bottomleft",cex=.8)
+	},{
+		for(i in seq(xx.uniq)) {
+		  	sub <- xx==xx.uniq[i]
+		  	points(obj$model[sub,2],transf(obj$model[sub,1]),col=args$col[i],pch=args$pch[i],lwd=args$lwd[i])
+		}
+		do.legend(args,pos="bottomleft",cex=.8)
+	})
 
 } 
 
