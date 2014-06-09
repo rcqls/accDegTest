@@ -348,7 +348,7 @@ plot.addt <- function(obj,type="all degradations",with.layout=TRUE,fit=TRUE,only
   if(is.numeric(type)) type <- switch(type,"degradation","g-degradation","all degradations","interval stress plot","time resid","stress resid","normal","resid","points clouds")
   else type <- match.arg(type,c("degradation","g-degradation","all degradations","interval stress plot","time resid","stress resid","normal","resid","points clouds"))
 
-  if(type %in% c("degradation","g-degradation","all degradations","stress plot","points clouds") && is.null(xlim) ) 
+  if(type %in% c("degradation","g-degradation","all degradations","interval stress plot","points clouds") && is.null(xlim) ) 
     xlim <- range(c(0,obj$model[[2]]))
   
   xx.uniq <- obj$model$xx[obj$rank$start]
