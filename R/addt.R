@@ -182,10 +182,11 @@ init.addt <- function(obj,...) {
   ## xx = unique identifier for the level of stress
   obj$model$xx <- as.factor(apply(obj$model[obj$varnames$x],1,function(l) paste(paste(names(l),l,sep="="),collapse="&")))
   ## sort model by xx
-  obj$model <- obj$model[order(as.character(obj$model$xx)),]
+  obj$data_order <- order(as.character(obj$model$xx))
+  obj$model <- obj$model[obj$data_order,]
   ## rank for class
   obj$rank <- list(start=match(unique(obj$model$xx),obj$model$xx))
-  obj$rank$end <- c(obj$rank$start[-1]+1,length(obj$model$xx))
+  obj$rank$end <- c(obj$rank$start[-1]-1,length(obj$model$xx))
 
   ## xref = usual stress transformed as a named list used as an environment
   xref <- obj$xref

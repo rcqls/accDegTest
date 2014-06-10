@@ -51,6 +51,7 @@ S3method(summary, addt0)
 #S3method(model.frame, addt0)
 S3method(coef, addt0)
 S3method(plot, addt0)
+S3method(residuals, addt0)
 
 S3method(summary, addtTwoPass)
 S3method(coef, addtTwoPass)

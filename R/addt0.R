@@ -14,7 +14,6 @@ addt0 <- function(formula,xref=1,transf=log,data,measure.varname="measure",syste
 	}
 
 	obj <- new.env()
-	obj$data <- data
 	obj$formula <- formula
 	# remove 
 	if(!attr(terms(as.formula(strsplit(deparse(formula),"\\|")[[1]][1])),"intercept")) stop("Intercept required since it is supposed to be a random effect.")
@@ -24,6 +23,7 @@ addt0 <- function(formula,xref=1,transf=log,data,measure.varname="measure",syste
 	class(obj) <- c("addt0","addt") # addt for model.frame!
 
 	init.addt(obj,data=data)
+  obj$data <- data[obj$data_order,]
 
 	# reuse because already defined for general clouds plotting
 	init.system.clouds(obj,measure.varname,system.varname)
@@ -36,6 +36,7 @@ addt0 <- function(formula,xref=1,transf=log,data,measure.varname="measure",syste
 prepare.estim.addt0 <- function(obj) {
 	# measure 0
 	y0 <- obj$transf[[1]](obj$data[obj$measure==0,obj$varnames$y])
+  obj$y0 <- y0
 	#print(y0)
 	obj$coef.y0 <- mean(y0)
 	obj$sigma.y0 <- sd(y0)
@@ -47,6 +48,8 @@ prepare.estim.addt0 <- function(obj) {
 		}
 	)))
 
+  obj$data1 <- data1
+
 	#print(dim(data1))
 	form <- update(eval(as.call(c(obj$formula[[1]],obj$formula[[2]],obj$formula[[3]][[2]]))),.~0+.)
 	formula <- obj$formula
@@ -56,7 +59,7 @@ prepare.estim.addt0 <- function(obj) {
 	obj$sigma.dy <- summary(obj$addt.dy)$sigma
 
 	## model coefficients
-	obj$coef <- c(obj$coef.0,obj$coef.dy)
+	obj$coef <- c(obj$coef.y0,obj$coef.dy)
 	names(obj$coef)[[1]] <- "intercept"
 	obj$sigma <- obj$sigma.dy/sqrt(2)
 	obj$sigma.0 <- sqrt(obj$sigma.y0^2 - obj$sigma^2) # random intercept effect noise 
@@ -71,17 +74,42 @@ coef.addt0 <- function(obj,type=c("default","acceleration","af","AF")) {
   )
 }
 
-summary.addt0 <- function(obj) list(coefficients=coef(obj),sigma0=obj$sigma.0,sigma=obj$sigma,r.squared=summary(obj$addt.dy)$r.squared)
+summary.addt0 <- function(obj) list(
+    coefficients=coef(obj),sigma0=obj$sigma.0,sigma=obj$sigma,
+    r.squared=1-var(resid(obj,"random"))/var(obj$transf[[1]](obj$model[[1]])),
+    r.squared.fixed=1-var(resid(obj,"fixed"))/var(obj$transf[[1]](obj$model[[1]])),
+    r.squared.dy=summary(obj$addt.dy)$r.squared
+  )
 
-residuals.addt0 <- function(obj) {
-    resid <- obj$model[[1]]
-    aa1 <- obj$addt.dy$a1(obj$par)*coef(obj,"AF")
-    for(i in seq(obj$rank$start)) {
-      sub <- obj$rank$start[i]:obj$rank$end[i]
-      resid[sub] <- obj$transf[[1]](obj$model[[1]][sub])-(obj$coef.y0 + aa1[i]*obj$model[[2]][sub]) 
+residuals.addt0 <- function(obj,type=c("fixed","random")) {
+  type <- match.arg(type)
+  switch(type,
+    fixed={
+      resid <- obj$model[[1]]
+      aa1 <- obj$addt.dy$a1(obj$addt.dy$par)*coef(obj,"AF")
+      for(i in seq(obj$rank$start)) {
+        sub <- obj$rank$start[i]:obj$rank$end[i]
+        resid[sub] <- obj$transf[[1]](obj$model[[1]][sub])-(obj$coef.y0 + aa1[i]*obj$model[[2]][sub]) 
+      }
+      resid
+    },
+    random={
+      resid <- obj$model[[1]]
+      aa1 <- obj$addt.dy$a1(obj$addt.dy$par)*coef(obj,"AF")
+      for(i in seq(obj$rank$start)) {
+        sub <- obj$rank$start[i]:obj$rank$end[i]
+        # cat("ICI",i,"\n")
+        # print(sub);print((sub -1) %/% 2 +1)
+        # print(obj$model[[2]][sub])
+        # print(obj$transf[[1]](obj$model[[1]][sub]))
+        # print(obj$y0[(sub -1) %/% 2 +1])
+        # TODO: changer l'extraction qui suppose que les mesures 0 et 1 se suivent!
+        resid[sub] <- obj$transf[[1]](obj$model[[1]][sub])-(obj$y0[(sub -1) %/% 2 +1] + aa1[i]*obj$model[[2]][sub]) 
+        # print(resid[sub])
+      }
+      resid
     }
-    resid
-  # }
+  )
 }
 
 plot.addt0 <- function(obj,type="all degradations",with.layout=TRUE,fit=TRUE,only=NA,fitFreeAccel=FALSE,xlim=NULL,ylim=NULL,...) {
