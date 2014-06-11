@@ -63,7 +63,8 @@ prepare.estim.addt0 <- function(obj) {
 	obj$coef <- c(obj$coef.y0,obj$coef.dy)
 	names(obj$coef)[[1]] <- "intercept"
 	obj$sigma <- obj$sigma.dy/sqrt(2)
-	obj$sigma.0 <- sqrt(obj$sigma.y0^2 - obj$sigma^2) # random intercept effect noise 
+	obj$sigma.0 <- sqrt(max(0,obj$sigma.y0^2 - obj$sigma^2)) # random intercept effect noise 
+
 }
 
 
