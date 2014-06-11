@@ -43,8 +43,7 @@ prepare.estim.addt0 <- function(obj) {
 
 	# measure 1
 	data1 <- cbind(obj$data[obj$measure==1,], data.frame(dy=sapply(unique(obj$syst_id),function(s) {
-			obj$transf[[1]](obj$data[obj$syst_id == s & obj$measure == 1, obj$varnames$y])
-			- obj$transf[[1]](obj$data[obj$syst_id == s & obj$measure == 0, obj$varnames$y])
+			obj$transf[[1]](obj$data[obj$syst_id == s & obj$measure == 1, obj$varnames$y]) - obj$transf[[1]](obj$data[obj$syst_id == s & obj$measure == 0, obj$varnames$y])
 		}
 	)))
 
@@ -54,6 +53,8 @@ prepare.estim.addt0 <- function(obj) {
 	form <- update(eval(as.call(c(obj$formula[[1]],obj$formula[[2]],obj$formula[[3]][[2]]))),.~0+.)
 	formula <- obj$formula
 	formula[[3]][[2]] <- form[[3]]
+  formula[[2]] <- as.name("dy")
+  obj$formula1 <- formula
 	obj$addt.dy <- addt(formula,obj$xref,transf=identity,data=data1)
 	obj$coef.dy <- coef(obj$addt.dy)
 	obj$sigma.dy <- summary(obj$addt.dy)$sigma
@@ -152,7 +153,7 @@ plot.addt0 <- function(obj,type="all degradations",with.layout=TRUE,fit=TRUE,onl
   }  
 
   aa1<-obj$addt.dy$a1(obj$addt.dy$par)*coef(obj$addt.dy,"AF")
-  #cat("aa1->");print(aa1)
+  cat("aa1->");print(aa1)
 
   if(type=="points clouds") {
     plot.clouds(obj,xlim=xlim,main="points clouds",only=only,...)
