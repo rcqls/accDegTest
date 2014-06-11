@@ -153,7 +153,7 @@ plot.addt0 <- function(obj,type="all degradations",with.layout=TRUE,fit=TRUE,onl
   }  
 
   aa1<-obj$addt.dy$a1(obj$addt.dy$par)*coef(obj$addt.dy,"AF")
-  cat("aa1->");print(aa1)
+  #cat("aa1->");print(aa1)
 
   if(type=="points clouds") {
     plot.clouds(obj,xlim=xlim,main="points clouds",only=only,...)
